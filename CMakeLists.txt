@@ -88,9 +88,15 @@ add_custom_target(package-module
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different
             "${CMAKE_CURRENT_SOURCE_DIR}/module/icon.svg"
             "${FGB_PACKAGE_STAGE}/icon.svg"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
+            "${FGB_PACKAGE_STAGE}/LICENSE"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/NOTICE"
+            "${FGB_PACKAGE_STAGE}/NOTICE"
     COMMAND "${CMAKE_COMMAND}" -E chdir "${FGB_PACKAGE_STAGE}"
             "${CMAKE_COMMAND}" -E tar cf "${FGB_PACKAGE_PATH}" --format=zip --
-            fgb-native.json pico-connect-face.dll icon.svg
+            fgb-native.json pico-connect-face.dll icon.svg LICENSE NOTICE
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
     DEPENDS pico-connect-face
     COMMENT "Packaging ${FGB_PACKAGE_NAME}"

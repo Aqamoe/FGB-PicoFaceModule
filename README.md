@@ -1,5 +1,7 @@
 # FGB PicoFaceModule
 
+[![build](https://github.com/Aqamoe/FGB-PicoFaceModule/actions/workflows/build.yml/badge.svg)](https://github.com/Aqamoe/FGB-PicoFaceModule/actions/workflows/build.yml)
+
 [FaceGaze Bridge](https://github.com/Aqamoe/FaceGaze-Bridge) 的 PICO 面捕原生模块。
 直接接收 **PICO 互联（PICO Connect）** 发出的 UDP 面捕数据，输出 Unified Expressions 表情、
 睁眼度与逐眼方向。不需要 VRCFT，不注入任何进程，也不需要管理员权限。
