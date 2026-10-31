@@ -1,0 +1,7 @@
+build/
+out/
+.vs/
+*.user
+
+# 宿主侧的 ABI 指南，留在本地参考，不随模块仓库分发
+05-native-module-guide.md

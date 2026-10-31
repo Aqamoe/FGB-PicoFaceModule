@@ -1,0 +1,14 @@
+FGB PicoFaceModule
+Copyright 2026 Aqamoe (光水)
+
+This product includes a copy of fgb_module_api.h from FaceGaze Bridge
+(https://github.com/Aqamoe/FaceGaze-Bridge), licensed under the Apache
+License, Version 2.0.
+
+The UDP packet layout and expression mapping heuristics were informed by
+VRCFTPicoModule (https://github.com/lonelyicer/VRCFTPicoModule). That
+project declares no license. This repository is an independent C++
+implementation and contains none of its source code.
+
+PICO and PICO Connect are trademarks of their respective owners. This
+project is not affiliated with or endorsed by PICO.
