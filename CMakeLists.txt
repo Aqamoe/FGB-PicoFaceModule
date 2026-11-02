@@ -8,97 +8,31 @@ cmake_policy(SET CMP0091 NEW)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 add_compile_definitions(NOMINMAX WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00)
-if(MSVC)
-    add_compile_options(/utf-8 /W4 /permissive-)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(fgb_dependency)
+
+# SDK 先进来：Kit 在独立构建时才会自己拉 SDK。
+fgb_fetch_from_lock(facegaze_sdk "${CMAKE_CURRENT_SOURCE_DIR}/sdk.lock.json")
+
+# 本地开发可以用 -DFGB_KIT_DIR=<Kit 源码目录> 绕过归档下载；CI 走 kit.lock.json。
+set(FGB_KIT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+if(FGB_KIT_DIR)
+    add_subdirectory("${FGB_KIT_DIR}" "${CMAKE_BINARY_DIR}/fgb-kit")
+else()
+    fgb_fetch_from_lock(fgb_kit "${CMAKE_CURRENT_SOURCE_DIR}/kit.lock.json")
 endif()
 
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/module/fgb-native.json" FGB_MANIFEST)
-string(JSON FGB_MODULE_VERSION GET "${FGB_MANIFEST}" Version)
+list(APPEND CMAKE_MODULE_PATH "${FGB_KIT_CMAKE_DIR}")
+include(FgbModule)
 
-add_library(pico-connect-face MODULE
-    src/main.cpp
-    src/pico_face_mapping.cpp
-    src/pico_face_protocol.cpp
-)
-target_include_directories(pico-connect-face PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/src"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fgb"
-)
-target_link_libraries(pico-connect-face PRIVATE ws2_32)
-set_target_properties(pico-connect-face PROPERTIES
-    PREFIX ""
-    OUTPUT_NAME "pico-connect-face"
-)
-
-add_custom_command(TARGET pico-connect-face POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "${CMAKE_CURRENT_SOURCE_DIR}/module/fgb-native.json"
-            "$<TARGET_FILE_DIR:pico-connect-face>/fgb-native.json"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "${CMAKE_CURRENT_SOURCE_DIR}/module/icon.svg"
-            "$<TARGET_FILE_DIR:pico-connect-face>/icon.svg"
-)
-
+# enable_testing 必须在顶层工程调用，ctest 才能在 build 目录里发现用例。
 enable_testing()
-add_executable(pico-face-protocol-tests
-    tests/test_protocol.cpp
-    src/pico_face_protocol.cpp
-)
-target_include_directories(pico-face-protocol-tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-add_test(NAME pico-face-protocol-tests COMMAND pico-face-protocol-tests)
 
-add_executable(pico-face-mapping-tests
-    tests/test_mapping.cpp
-    src/pico_face_mapping.cpp
-    src/pico_face_protocol.cpp
-)
-target_include_directories(pico-face-mapping-tests PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/src"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fgb"
-)
-add_test(NAME pico-face-mapping-tests COMMAND pico-face-mapping-tests)
-
-# 需要 29765/29763 空闲（先关 VRCFT），所以不挂到 ctest。
-add_executable(pico-face-abi-smoke tests/abi_smoke.cpp)
-target_include_directories(pico-face-abi-smoke PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/src"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/fgb"
-)
-target_link_libraries(pico-face-abi-smoke PRIVATE ws2_32)
-add_dependencies(pico-face-abi-smoke pico-connect-face)
-add_custom_target(smoke-test
-    COMMAND pico-face-abi-smoke "$<TARGET_FILE:pico-connect-face>"
-    DEPENDS pico-face-abi-smoke pico-connect-face
-    COMMENT "Loading pico-connect-face.dll through the ABI with synthetic UDP"
-    VERBATIM
-)
-
-set(FGB_PACKAGE_STAGE "${CMAKE_BINARY_DIR}/package")
-set(FGB_PACKAGE_NAME "pico-connect-face-${FGB_MODULE_VERSION}.zip")
-set(FGB_PACKAGE_PATH "${CMAKE_BINARY_DIR}/$<CONFIG>/${FGB_PACKAGE_NAME}")
-add_custom_target(package-module
-    COMMAND "${CMAKE_COMMAND}" -E rm -rf "${FGB_PACKAGE_STAGE}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${FGB_PACKAGE_STAGE}"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "$<TARGET_FILE:pico-connect-face>"
-            "${FGB_PACKAGE_STAGE}/pico-connect-face.dll"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "${CMAKE_CURRENT_SOURCE_DIR}/module/fgb-native.json"
-            "${FGB_PACKAGE_STAGE}/fgb-native.json"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "${CMAKE_CURRENT_SOURCE_DIR}/module/icon.svg"
-            "${FGB_PACKAGE_STAGE}/icon.svg"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE"
-            "${FGB_PACKAGE_STAGE}/LICENSE"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-            "${CMAKE_CURRENT_SOURCE_DIR}/NOTICE"
-            "${FGB_PACKAGE_STAGE}/NOTICE"
-    COMMAND "${CMAKE_COMMAND}" -E chdir "${FGB_PACKAGE_STAGE}"
-            "${CMAKE_COMMAND}" -E tar cf "${FGB_PACKAGE_PATH}" --format=zip --
-            fgb-native.json pico-connect-face.dll icon.svg LICENSE NOTICE
-    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-    DEPENDS pico-connect-face
-    COMMENT "Packaging ${FGB_PACKAGE_NAME}"
-    VERBATIM
+fgb_add_module(
+    NAME pico-connect-face
+    MAIN src/main.cpp
+    SOURCES src/pico_face_mapping.cpp src/pico_face_protocol.cpp
+    TEST_SOURCES tests/test_mapping.cpp tests/test_protocol.cpp
+    SMOKE_SOURCE tests/abi_smoke.cpp
 )

@@ -104,7 +104,7 @@ cmake --build build --config Release --target smoke-test
 src/main.cpp               UDP 接收线程、生命周期、日志与状态上报
 src/pico_face_protocol.*   PICO 面捕包解析
 src/pico_face_mapping.*    PICO 系数 → Unified Expressions / 眼睛
-include/fgb/               FaceGaze Bridge ABI 头（Apache-2.0）
+sdk.lock.json / kit.lock.json   ABI 头与共享 Kit：构建时拉取并校验 SHA256，仓库不留副本
 module/                    fgb-native.json 与图标
 tests/                     协议单测、映射单测、ABI 冒烟
 ```
